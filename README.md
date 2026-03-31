@@ -1,6 +1,6 @@
-# Playlog
+# PlayLog
 
-Playlog is a full-stack gaming tracker, social leaderboard, and discovery platform.
+PlayLog is a full-stack gaming tracker, social leaderboard, and discovery platform.
 
 ## Stack
 
