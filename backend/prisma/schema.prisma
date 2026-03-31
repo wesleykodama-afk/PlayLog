@@ -1,0 +1,139 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Platform {
+  STEAM
+  EPIC
+  GOG
+  PLAYSTATION
+  NINTENDO
+}
+
+enum GameStatus {
+  PLAYING
+  COMPLETED
+  PLATINUM
+  DROPPED
+}
+
+enum ActivityType {
+  GAME_ADDED
+  GAME_UPDATED
+  REVIEW_POSTED
+  STEAM_SYNCED
+  FRIEND_ADDED
+}
+
+model User {
+  id            String          @id @default(cuid())
+  username      String          @unique
+  email         String          @unique
+  passwordHash  String
+  profileImage  String?
+  bio           String?
+  role          Role            @default(USER)
+  steamId       String?
+  lastSyncAt    DateTime?
+  language      String          @default("English")
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  games         Game[]
+  activities    Activity[]
+  settings      Settings?
+  sentFriends   Friend[]        @relation("UserFriends")
+  receivedLinks Friend[]        @relation("FriendUsers")
+  likes         ActivityLike[]
+}
+
+model Game {
+  id           String      @id @default(cuid())
+  userId       String
+  name         String
+  platform     Platform
+  status       GameStatus
+  hoursPlayed  Float       @default(0)
+  rating       Float?
+  review       String?
+  playedDate   DateTime?
+  coverUrl     String?
+  source       String      @default("manual")
+  externalId   String?
+  releaseDate  String?
+  genre        String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Friend {
+  id        String   @id @default(cuid())
+  userId    String
+  friendId  String
+  createdAt DateTime @default(now())
+  user      User     @relation("UserFriends", fields: [userId], references: [id], onDelete: Cascade)
+  friend    User     @relation("FriendUsers", fields: [friendId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, friendId])
+}
+
+model Activity {
+  id          String         @id @default(cuid())
+  userId      String
+  type        ActivityType
+  gameName    String?
+  hoursPlayed Float?
+  rating      Float?
+  review      String?
+  createdAt   DateTime       @default(now())
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes       ActivityLike[]
+
+  @@index([userId, createdAt])
+}
+
+model ActivityLike {
+  id         String   @id @default(cuid())
+  activityId String
+  userId     String
+  createdAt  DateTime @default(now())
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([activityId, userId])
+}
+
+model AffiliateProduct {
+  id            String   @id @default(cuid())
+  name          String
+  imageUrl      String
+  description   String
+  affiliateLink String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Settings {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  preferredLanguage String  @default("English")
+  steamProfileUrl  String?
+  epicProfileUrl   String?
+  gogProfileUrl    String?
+  customLinks      String   @default("[]")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
